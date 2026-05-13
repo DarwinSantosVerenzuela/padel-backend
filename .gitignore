@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+
+# Supabase local
+.supabase/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Docker
+.docker/
+
+# VAPID keys — NEVER commit
+vapid-keys.json
+
+# Secrets
+*.pem
+*.key
+*.cert
