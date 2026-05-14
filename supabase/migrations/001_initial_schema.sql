@@ -489,20 +489,20 @@ CREATE TRIGGER on_auth_user_created
 CREATE OR REPLACE FUNCTION public.update_post_likes_count()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF TG_OP = 'INSERT' THEN
+    IF TG_OP = 'INSERT' AND NEW.post_id IS NOT NULL THEN
         UPDATE public.posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
         RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN
+    ELSIF TG_OP = 'DELETE' AND OLD.post_id IS NOT NULL THEN
         UPDATE public.posts SET likes_count = likes_count - 1 WHERE id = OLD.post_id;
         RETURN OLD;
     END IF;
+    RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER on_like_change
     AFTER INSERT OR DELETE ON public.likes
     FOR EACH ROW
-    WHEN (COALESCE(NEW.post_id, OLD.post_id) IS NOT NULL)
     EXECUTE FUNCTION public.update_post_likes_count();
 
 CREATE OR REPLACE FUNCTION public.update_post_comments_count()
