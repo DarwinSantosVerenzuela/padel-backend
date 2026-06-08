@@ -2,6 +2,7 @@
   "name": "padel-backend",
   "version": "1.0.0",
   "description": "PadelApp Backend API — Node.js + Fastify + Supabase",
+  "type": "module",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",

@@ -27,15 +27,24 @@ export function startRankingsCron() {
 
                 // Update each player's ELO
                 for (const result of results) {
+                    const playerProfile = teamA.find((p: any) => p.id === result.playerId) || teamB.find((p: any) => p.id === result.playerId);
+                    const isWinner = (match.winner_team === 'a' && teamA.some((p: any) => p.id === result.playerId))
+                        || (match.winner_team === 'b' && teamB.some((p: any) => p.id === result.playerId));
+
                     await supabaseAdmin.from('profiles').update({
                         elo_rating: result.newRating,
-                        elo_matches_played: supabaseAdmin.rpc ? undefined : result.oldRating, // handled below
-                        elo_confidence: calculateConfidence((teamA.find((p: any) => p.id === result.playerId) || teamB.find((p: any) => p.id === result.playerId))?.elo_matches_played + 1 || 1),
-                        elo_highest: Math.max(result.newRating, (teamA.find((p: any) => p.id === result.playerId) || teamB.find((p: any) => p.id === result.playerId))?.elo_highest || 0),
+                        elo_confidence: calculateConfidence((playerProfile?.elo_matches_played || 0) + 1),
+                        elo_highest: Math.max(result.newRating, playerProfile?.elo_highest || 0),
                     }).eq('id', result.playerId);
 
                     // Increment matches played
                     await supabaseAdmin.rpc('increment_elo_matches', { user_id: result.playerId });
+
+                    // Update win/loss streak
+                    await supabaseAdmin.rpc('update_player_streak', {
+                        p_player_id: result.playerId,
+                        p_won: isWinner,
+                    });
 
                     // Update match_players with before/after
                     await supabaseAdmin.from('match_players').update({ elo_before: result.oldRating, elo_after: result.newRating })
@@ -47,6 +56,10 @@ export function startRankingsCron() {
                 const teamBChange = results.filter(r => teamB.some((p: any) => p.id === r.playerId)).reduce((s, r) => s + r.change, 0);
                 await supabaseAdmin.from('matches').update({ elo_change_team_a: teamAChange, elo_change_team_b: teamBChange }).eq('id', match.id);
             }
+
+            // Recalculate global rankings after processing matches
+            await supabaseAdmin.rpc('recalculate_global_rankings');
+
         } catch (err) {
             console.error('❌ Rankings cron error:', err);
         }
